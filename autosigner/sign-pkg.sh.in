@@ -1,0 +1,31 @@
+#!/bin/bash
+
+keyid=@KEYID@
+export GNUPGHOME=$(pwd)/gpg
+
+if [ $# -ne 1 ]; then
+    echo "usage: `basename $0` <rpm-package>" 1>&2
+    exit 1
+fi
+
+if [ ! -d $GNUPGHOME ]; then
+    echo "Missing GNUPG home directory: $GNUPGHOME" 1>&2
+    exit 1
+fi
+
+# Keep GPG quiet about permissions
+chmod 700 $GNUPGHOME
+
+# Give up if we don't actually have the key
+if ! gpg --fingerprint $keyid &>/dev/null; then
+    echo "Key is missing: $keyid" 1>&2
+    exit 1
+fi
+
+echo "Signing Package: $1"
+
+# Preload getpass() override library
+LD_PRELOAD=./autosign.so rpmsign --addsign --key-id=$keyid $1
+
+[ $? -ne 0 ] && exit 1 || exit 0
+

@@ -3,8 +3,8 @@
 keyid=@KEYID@
 export GNUPGHOME=$(pwd)/gpg
 
-if [ $# -ne 1 ]; then
-    echo "usage: `basename $0` <rpm-package>" 1>&2
+if [ $# -lt 1 ]; then
+    echo "usage: `basename $0` <rpm-package(s)>" 1>&2
     exit 1
 fi
 
@@ -22,10 +22,15 @@ if ! gpg --fingerprint $keyid &>/dev/null; then
     exit 1
 fi
 
-echo "Signing Package: $1"
+gpg_name="$(gpg --list-keys | grep uid | awk '$1=""; { sub(/^[ ]+/,""); print $0}')"
+
+echo "Signing Package(s): $@"
 
 # Preload getpass() override library
-LD_PRELOAD=./autosign.so rpmsign --addsign --key-id=$keyid $1
+
+# Using _gpg_name define in favor of --key-id parameter since the use
+# of _gpg_name is backwards compatible.
+LD_PRELOAD=./autosign.so rpmsign --addsign --define="_gpg_name $gpg_name" "$@"
 
 [ $? -ne 0 ] && exit 1 || exit 0
 

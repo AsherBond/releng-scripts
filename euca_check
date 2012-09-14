@@ -40,7 +40,7 @@ class EucaChecker(object):
         self.config = EucaConfig(configfile)
         self.region = RegionInfo()
         self.region.name = 'eucalyptus'
-        self.region.endpoint = 'cloud.release.eucalyptus-systems.com'
+        self.region.endpoint = self.config.host
 
         self.conn = boto.connect_ec2(aws_access_key_id=self.config.access_key,
             aws_secret_access_key=self.config.secret_key, port=8773,

@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+
+import sys
+import re
+import boto
+import getopt
+from ConfigParser import ConfigParser
+from boto.ec2.regioninfo import RegionInfo
+
+
+def usage():
+    print """
+    euca_check [-t vmtype]
+    """
+    sys.exit(3)
+
+
+class EucaConfig(object):
+    def __init__(self, configfile):
+        self.config = ConfigParser()
+        self.config.read(configfile)
+
+    @property
+    def host(self):
+        return self.config.get('options', 'host')
+
+    @property
+    def access_key(self):
+        return self.config.get('options', 'access_key')
+
+    @property
+    def secret_key(self):
+        return self.config.get('options', 'secret_key')
+
+
+class EucaChecker(object):
+    TYPESTATE_RE = r'^(\d+) / (\d+)'
+
+    def __init__(self, configfile):
+        self.config = EucaConfig(configfile)
+        self.region = RegionInfo()
+        self.region.name = 'eucalyptus'
+        self.region.endpoint = 'cloud.release.eucalyptus-systems.com'
+
+        self.conn = boto.connect_ec2(aws_access_key_id=self.config.access_key,
+            aws_secret_access_key=self.config.secret_key, port=8773,
+            path='/services/Eucalyptus', api_version='2009-11-30',
+            region=self.region, is_secure=False)
+
+    def get_type_info(self, vmtype):
+        zones = self.conn.get_all_zones(zones=['verbose'])
+        for zone in zones:
+            if vmtype in zone.name:
+                m = re.match(EucaChecker.TYPESTATE_RE, str(zone.state))
+                return int(m.group(1)), int(m.group(2))
+        return None, None
+
+
+if __name__ == "__main__":
+    vmtype = None
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hV:", ["help", "vmtype="])
+        for name, value in opts:
+            if name in ("-V", "--vmtype="):
+                vmtype = value
+            elif name in ("-h", "--help"):
+                usage()
+    except getopt.GetoptError:
+        usage()
+
+    if vmtype:
+        euca = EucaChecker('/etc/euca_check.cfg')
+        used, avail = euca.get_type_info(vmtype)
+        if used and avail:
+            if avail < 56:
+                sys.exit(2)
+            else:
+                sys.exit(0)
+    sys.exit(3)
+

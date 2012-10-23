@@ -1,0 +1,39 @@
+#!/bin/bash
+
+VERSION=3.2
+KEY=nightly
+TYPE=nightly
+RELEASE_PATH=/srv/software/releases/eucalyptus/nightly/$VERSION
+
+export GNUPGHOME=@KEY_PATH@
+
+# Here we do build promotion. We only need to sign on the last call since all
+# builds are being pushed to the same repository.
+@PYTHON_VIRTENV@/bin/python @ARADO_HOME@/arado-promote-build \
+	-p eucalyptus -c testing -r $VERSION -t $TYPE || exit 1
+
+@PYTHON_VIRTENV@/bin/python @ARADO_HOME@/arado-promote-build \
+	-p eucalyptus-console -c master -r $VERSION -t $TYPE -m || exit 2
+
+@PYTHON_VIRTENV@/bin/python @ARADO_HOME@/arado-promote-build \
+	-p eucadw -c master -r $VERSION -t $TYPE -k $KEY -m || exit 3
+
+# Promote enterprise bits to separate repository
+@PYTHON_VIRTENV@/bin/python @ARADO_HOME@/arado-promote-build \
+	-p enterprise -c testing -r $VERSION -t $TYPE -k $KEY || exit 4
+
+# Build release packages and install them in the repository.
+# Note that these are NOT signed packages and so can be installed
+# by users without the need for a GPG key.
+@NIGHTLY_PATH@/build-release.sh -t .el6 $RELEASE_PATH/centos/6/x86_64/ || exit 5
+@NIGHTLY_PATH@/build-release.sh -t .el5 $RELEASE_PATH/centos/5/i386/ || exit 6
+@NIGHTLY_PATH@/build-release.sh -t .el5 $RELEASE_PATH/centos/5/x86_64/ || exit 7
+
+# Now copy over EPEL and ELRepo repository packages
+cp -a @NIGHTLY_PATH@/packages/el5/*.rpm $RELEASE_PATH/centos/5/i386/ || exit 8
+cp -a @NIGHTLY_PATH@/packages/el5/*.rpm $RELEASE_PATH/centos/5/x86_64/ || exit 9
+cp -a @NIGHTLY_PATH@/packages/el6/*.rpm $RELEASE_PATH/centos/6/x86_64/ || exit 10
+
+# If everything was successful we push packages
+rsync -e "ssh -i @PRIVATE_KEY@" --delete -avz /srv/software/releases/* @REMOTE_SERVER@:/srv/software/releases/ || exit 11
+

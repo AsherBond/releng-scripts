@@ -18,3 +18,6 @@ ARADO_HOME=/opt/nightly/arado
 # Location where nightly scripts are installed
 NIGHTLY_PATH=/opt/nightly/build
 
+# Email address for notifications
+NOTIFY_ADDRESS=some@address.com
+

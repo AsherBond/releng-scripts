@@ -49,7 +49,8 @@ install: build
 	ln -s $(EL6_PKG) $(DESTDIR)$(NIGHTLY_PATH)/packages/el6/epel-release-6.noarch.rpm
 
 clean:
-	rm -f promote-nightly.{sh,cron}
+	rm -f promote-nightly.sh
+	rm -f promote-nightly.cron
 	rm -f build-release.sh
 
 include config.mk

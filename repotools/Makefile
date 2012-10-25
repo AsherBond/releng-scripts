@@ -40,7 +40,8 @@ install: build
 	git clone https://github.com/mspaulding06/arado $(DESTDIR)$(ARADO_HOME)
 	cp $(DESTDIR)$(ARADO_HOME)/bin/* $(DESTDIR)$(ARADO_HOME)
 	# Install repository packages
-	mkdir -p $(DESTDIR)$(NIGHTLY_PATH)/packages/el{5,6}
+	mkdir -p $(DESTDIR)$(NIGHTLY_PATH)/packages/el5
+	mkdir -p $(DESTDIR)$(NIGHTLY_PATH)/packages/el6
 	wget http://download.fedoraproject.org/pub/epel/5/i386/$(EL5_PKG) \
 		-O $(DESTDIR)$(NIGHTLY_PATH)/packages/el5/$(EL5_PKG)
 	wget http://download.fedoraproject.org/pub/epel/6/i386/$(EL6_PKG) \

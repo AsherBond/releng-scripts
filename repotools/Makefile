@@ -12,6 +12,8 @@ promote-nightly.sh: templates/promote-nightly.sh.in
 		-e 's|@NIGHTLY_PATH@|$(NIGHTLY_PATH)|g' \
 		-e 's|@PRIVATE_KEY@|$(PRIVATE_KEY)|g' \
 		-e 's|@KEY_PATH@|$(KEY_PATH)|g' \
+		-e 's|@LOGFILE@|$(LOGFILE)|g' \
+		-e 's|@NOTIFY_ADDRESS@|$(NOTIFY_ADDRESS)|g' \
 		templates/promote-nightly.sh.in > promote-nightly.sh
 	@chmod 755 promote-nightly.sh
 

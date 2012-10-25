@@ -18,9 +18,6 @@ ARADO_HOME=/opt/nightly/arado
 # Location where nightly scripts are installed
 NIGHTLY_PATH=/opt/nightly/build
 
-# Location to log messages
-LOGFILE=/var/log/promote-nightly.log
-
 # Email address for notifications
 NOTIFY_ADDRESS=some@address.com
 

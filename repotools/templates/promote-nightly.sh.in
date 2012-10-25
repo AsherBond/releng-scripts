@@ -5,19 +5,18 @@ KEY=nightly
 TYPE=nightly
 RELEASE_PATH=/srv/software/releases/eucalyptus/nightly/$VERSION
 ENTERPRISE_RELEASE_PATH=/srv/software/releases/enterprise/nightly/$VERSION
-LOGFILE=@LOGFILE@
 SEND_NOTIFICATION=yes
 NOTIFY_ADDRESS=@NOTIFY_ADDRESS@
 
 export GNUPGHOME=@KEY_PATH@
 
 log() {
-	logger -t PROMOTE_NIGHTLY -f "$LOGFILE" "$@"
+	logger -t PROMOTE_NIGHTLY "$@"
 }
 
 fail() {
 	local msg="ERROR: $@"
-	logger -t PROMOTE_NIGHTLY -f "$LOGFILE" -s "$msg"
+	logger -t PROMOTE_NIGHTLY -s "$msg"
 	[ "$SEND_NOTIFICATION" = "yes" ] && notify_failure "$msg"
 	exit 1
 }

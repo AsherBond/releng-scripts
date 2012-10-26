@@ -32,7 +32,7 @@ install: build
 	install -pm 644 release-package.spec $(DESTDIR)$(NIGHTLY_PATH)
 	# Install cronjob
 	mkdir -p $(DESTDIR)/etc/cron.d
-	install -pm 644 promote-nightly.cron $(DESTDIR)/etc/cron.d
+	install -pm 644 promote-nightly.cron $(DESTDIR)/etc/cron.d/promote-nightly
 	# Install virtualenv and arado
 	virtualenv $(DESTDIR)$(PYTHON_VIRTENV)
 	$(DESTDIR)$(PYTHON_VIRTENV)/bin/pip install requests

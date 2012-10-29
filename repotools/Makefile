@@ -1,5 +1,6 @@
 EL5_PKG=epel-release-5-4.noarch.rpm
 EL6_PKG=epel-release-6-7.noarch.rpm
+ELREPO6_PKG=elrepo-release-6-4.el6.elrepo.noarch.rpm
 
 all: build
 
@@ -45,8 +46,11 @@ install: build
 		-O $(DESTDIR)$(NIGHTLY_PATH)/packages/el5/$(EL5_PKG)
 	wget http://download.fedoraproject.org/pub/epel/6/i386/$(EL6_PKG) \
 		-O $(DESTDIR)$(NIGHTLY_PATH)/packages/el6/$(EL6_PKG)
+	wget http://elrepo.org/$(ELREPO6_PKG) \
+		-O $(DESTDIR)$(NIGHTLY_PATH)/packages/el6/$(ELREPO6_PKG)
 	ln -s $(EL5_PKG) $(DESTDIR)$(NIGHTLY_PATH)/packages/el5/epel-release-5.noarch.rpm
 	ln -s $(EL6_PKG) $(DESTDIR)$(NIGHTLY_PATH)/packages/el6/epel-release-6.noarch.rpm
+	ln -s $(ELREPO6_PKG) $(DESTDIR)$(NIGHTLY_PATH)/packages/el6/elrepo-release-6.noarch.rpm
 
 clean:
 	rm -f promote-nightly.sh

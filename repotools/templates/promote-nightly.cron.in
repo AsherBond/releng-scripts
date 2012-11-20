@@ -1,4 +1,4 @@
 # Promote latest builds from testing branch
-# Occurs at 10pm Pacific Monday through Friday
-0 6 * * 1-5 root /bin/bash @NIGHTLY_PATH@/promote-nightly.sh
+# Occurs at 10pm Pacific every day
+0 6 * * * root /bin/bash @NIGHTLY_PATH@/promote-nightly.sh
 

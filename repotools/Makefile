@@ -30,6 +30,9 @@ install: build
 	mkdir -p $(DESTDIR)$(NIGHTLY_PATH)
 	install -pm 755 promote-nightly.sh $(DESTDIR)$(NIGHTLY_PATH)
 	install -pm 755 build-release.sh $(DESTDIR)$(NIGHTLY_PATH)
+	install -pm 755 checkbuild.py $(DESTDIR)$(NIGHTLY_PATH)
+	install -pm 755 promote-packages.py $(DESTDIR)$(NIGHTLY_PATH)
+	install -pm 755 create-reprepo-repo.sh $(DESTDIR)$(NIGHTLY_PATH)
 	install -pm 644 release-package.spec $(DESTDIR)$(NIGHTLY_PATH)
 	# Install cronjob
 	mkdir -p $(DESTDIR)/etc/cron.d

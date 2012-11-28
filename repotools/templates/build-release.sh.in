@@ -45,7 +45,9 @@ EOF
         --define "dist $TARGET_PLATFORM" \
         $SCRIPT_DIR/release-package.spec
 
-    cp $tmpdir/RPMS/noarch/*.rpm "$DESTDIR"
+    pkgname=`echo -n $tmpdir/RPMS/noarch/*.rpm`
+    cp $pkgname "$DESTDIR"
+    ln -s `basename $pkgname` "$DESTDIR"/$package_name-${PACKAGE_VERSION}.noarch.rpm
 
     rm -rf $tmpdir
 }

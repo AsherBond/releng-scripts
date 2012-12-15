@@ -1,24 +1,23 @@
 #!/bin/bash
 
 VERSION=3.2
-KEY=nightly
-TYPE=nightly
-RELEASE_PATH=/srv/software/releases/eucalyptus/nightly/$VERSION
-ENTERPRISE_RELEASE_PATH=/srv/software/releases/enterprise/nightly/$VERSION
-SEND_NOTIFICATION=yes
+KEY=release
+TYPE=release
+RELEASE_PATH=/srv/software/releases/eucalyptus/$VERSION
+ENTERPRISE_RELEASE_PATH=/srv/software/releases/enterprise/$VERSION
+SEND_NOTIFICATION=no
 DO_RSYNC=yes
-CHECK_QA=yes
 NOTIFY_ADDRESS=@NOTIFY_ADDRESS@
 
 export GNUPGHOME=@KEY_PATH@
 
 log() {
-	logger -t PROMOTE_NIGHTLY "$@"
+	logger -t PROMOTE_RELEASE "$@"
 }
 
 fail() {
 	local msg="ERROR: $@"
-	logger -t PROMOTE_NIGHTLY -s "$msg"
+	logger -t PROMOTE_RELEASE -s "$msg"
 	[ "$SEND_NOTIFICATION" = "yes" ] && notify_failure "$msg"
 	exit 1
 }
@@ -43,13 +42,13 @@ notify_failure() {
 	msg_body "$@" | mail -s "Nightly Build Promotion Failure" $NOTIFY_ADDRESS
 }
 
-ENTERPRISE_COMMIT_HASH=
-if [ "$CHECK_QA" = "yes" ]; then
-	ENTERPRISE_COMMIT_HASH=$(@PYTHON_VIRTENV@/bin/python @NIGHTLY_PATH@/checkbuild.py | sed 's/[\r\n]*$//')
-else
-	ENTERPRISE_COMMIT_HASH=$(@PYTHON_VIRTENV@/bin/python @ARADO_HOME@/arado-describe-commit \
-		-p enterprise -c maint/3.2/testing | sed 's/[\r\n]*$//')
+if [ -z "$1" ]; then
+	echo "Must specify a commit hash for release"
+	exit 1
 fi
+
+ENTERPRISE_COMMIT_HASH=$(@PYTHON_VIRTENV@/bin/python @ARADO_HOME@/arado-describe-commit \
+	-p enterprise -c $1 | sed 's/[\r\n]*$//')
 
 log "Promote Enterprise Build \`$ENTERPRISE_COMMIT_HASH'"
 
@@ -60,8 +59,8 @@ log "Promote Enterprise Build \`$ENTERPRISE_COMMIT_HASH'"
 
 log "Finished Enterprise Build Promotion"
 
-find /srv/software/releases/enterprise/nightly/$VERSION/ -name "vmware*.src.rpm" | xargs rm -f
-find /srv/software/releases/enterprise/nightly/$VERSION/ -name "eucalyptus*.src.rpm" | xargs rm -f
+find /srv/software/releases/enterprise/$VERSION/ -name "vmware*.src.rpm" | xargs rm -f
+find /srv/software/releases/enterprise/$VERSION/ -name "eucalyptus*.src.rpm" | xargs rm -f
 
 # Decide which commit hash to promote for Eucalyptus based on what the enterprise
 # bits require.
@@ -88,7 +87,7 @@ log "Promote Eucalyptus Build \`$EUCA_COMMIT_HASH'"
 	|| fail "Promoting Eucalyptus Build"
 
 @PYTHON_VIRTENV@/bin/python @ARADO_HOME@/arado-promote-build \
-	-p eucadw -c master -r $VERSION -t $TYPE -k $KEY -m \
+	-p eucadw -c maint/3.2/master -r $VERSION -t $TYPE -k $KEY -m \
 	|| fail "Promoting EucaDW Build"
 
 log "Installing Eucalyptus Release Packages"
@@ -96,11 +95,11 @@ log "Installing Eucalyptus Release Packages"
 # Build release packages and install them in the repository.
 # Note that these are NOT signed packages and so can be installed
 # by users without the need for a GPG key.
-@NIGHTLY_PATH@/build-nightly-release.sh -t .el6 $RELEASE_PATH/centos/6/x86_64/ \
+@NIGHTLY_PATH@/build-release.sh -t .el6 $RELEASE_PATH/centos/6/x86_64/ \
 	|| fail "Building EL6 Release Package"
-@NIGHTLY_PATH@/build-nightly-release.sh -t .el5 $RELEASE_PATH/centos/5/i386/ \
+@NIGHTLY_PATH@/build-release.sh -t .el5 $RELEASE_PATH/centos/5/i386/ \
 	|| fail "Building EL5 i386 Release Package"
-@NIGHTLY_PATH@/build-nightly-release.sh -t .el5 $RELEASE_PATH/centos/5/x86_64/ \
+@NIGHTLY_PATH@/build-release.sh -t .el5 $RELEASE_PATH/centos/5/x86_64/ \
 	|| fail "Building EL5 x86_64 Release Package"
 
 # Now copy over EPEL and ELRepo repository packages
@@ -117,26 +116,17 @@ cp -a @NIGHTLY_PATH@/packages/el6/*.rpm $RELEASE_PATH/centos/6/x86_64/ \
 
 log "Finished Eucalyptus Build Promotion"
 
-log "Promoting Debian Build"
-@NIGHTLY_PATH@/create-reprepo-repo.sh eucalyptus debian sid nightly/$VERSION \
-    || fail "Creating Debian Repository"
-@NIGHTLY_PATH@/promote-packages.py -f debian -t debian -d eucalyptus \
-    -s sid-testing -z sid -r nightly/$VERSION -n eucalyptus -p \
-    || fail "Promoting Debian Build"
-log "Finished Debian Build Promotion"
-
 if [ "$DO_RSYNC" = "yes" ]; then
 	log "Syncing to Downloads"
 
 	rsync -e "ssh -i @PRIVATE_KEY@" --delete -avz \
-		/srv/software/releases/enterprise/nightly/* \
-		@REMOTE_SERVER@:/srv/software/releases/enterprise/nightly/ \
+		--dry-run /srv/software/releases/enterprise/$VERSION/* \
+		@REMOTE_SERVER@:/srv/software/releases/enterprise/$VERSION/ \
 		|| fail "Syncing Enterprise Repository to Downloads"
 
-	# If everything was successful we push packages to downloads
 	rsync -e "ssh -i @PRIVATE_KEY@" --delete -avz \
-		/srv/software/releases/eucalyptus/nightly/* \
-		@REMOTE_SERVER@:/srv/software/releases/eucalyptus/nightly/ \
+		--dry-run /srv/software/releases/eucalyptus/$VERSION/* \
+		@REMOTE_SERVER@:/srv/software/releases/eucalyptus/$VERSION/ \
 		|| fail "Syncing Eucalyptus Repository to Downloads"
 fi
 

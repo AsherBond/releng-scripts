@@ -1,6 +1,6 @@
 Name:		%{package_name}
 Version:	%{package_version}
-Release:	0.1%{?dist}
+Release:	%{release_ver}%{?dist}
 Summary:	%{package_name} package
 
 Group:		Applications/System

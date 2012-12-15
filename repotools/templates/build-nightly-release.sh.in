@@ -4,26 +4,26 @@ SCRIPT_DIR="`dirname "$0"`"
 
 [ -z "$GNUPGHOME" ] && export GNUPGHOME=@KEY_PATH@
 
-PACKAGE_VERSION=3.2
-PACKAGE_RELEASE=1
+PACKAGE_VERSION=3.2.0
 TARGET_PLATFORM=.el6
 
 # Internal Release Repository
 INTERNAL_NAME=eucalyptus-release-internal
-INTERNAL_URL="http://release-repo.eucalyptus-systems.com/releases/eucalyptus/$PACKAGE_VERSION/centos/\$releasever/\$basearch/"
+INTERNAL_URL=http://release-repo.eucalyptus-systems.com/releases/eucalyptus/nightly/3.2/centos/\$releasever/\$basearch/
 
 # Public Release Repository
 PUBLIC_NAME=eucalyptus-release
-PUBLIC_URL=http://downloads.eucalyptus.com/software/eucalyptus/$PACKAGE_VERSION/centos/\$releasever/\$basearch/
-PUBLIC_MIRROR_URL="http://mirrors.eucalyptus.com/mirrors?product=eucalyptus&releasever=\$releasever&basearch=\$basearch&version=$PACKAGE_VERSION"
+PUBLIC_URL=http://downloads.eucalyptus.com/software/eucalyptus/nightly/3.2/centos/\$releasever/\$basearch/
 
 # Release Key
-KEY=C1240596
+# KEY=C1240596
+
+# Nightly Key
+KEY=9D7B073C
 
 build_package() {
     local package_name=$1
-    local urltype=$2
-    local repourl=$3
+    local url=$2
     local tmpdir=`mktemp -d`
 
     mkdir -p $tmpdir/{RPMS,SPECS,SOURCES,BUILD}
@@ -33,7 +33,7 @@ build_package() {
     cat > $tmpdir/SOURCES/$package_name.repo <<EOF
 [$package_name]
 name=$package_name
-${urltype}=${repourl}
+baseurl=$url
 gpgkey=file:///etc/pki/rpm-gpg/$package_name.pub
 gpgcheck=1
 enabled=1
@@ -42,8 +42,8 @@ EOF
     rpmbuild -bb --define "_topdir $tmpdir" \
         --define "package_name $package_name" \
         --define "package_version $PACKAGE_VERSION" \
-        --define "release_ver $PACKAGE_RELEASE" \
         --define "dist $TARGET_PLATFORM" \
+        --define "release_ver 0.1" \
         $SCRIPT_DIR/release-package.spec
 
     pkgname=`echo -n $tmpdir/RPMS/noarch/*.rpm`
@@ -75,6 +75,6 @@ if [ ! -d "$DESTDIR" ]; then
     exit 1
 fi
 
-build_package $PUBLIC_NAME mirrorlist "$PUBLIC_MIRROR_URL"
-build_package $INTERNAL_NAME baseurl "$INTERNAL_URL"
+build_package $PUBLIC_NAME $PUBLIC_URL
+build_package $INTERNAL_NAME $INTERNAL_URL
 

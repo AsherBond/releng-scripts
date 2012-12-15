@@ -1,38 +1,32 @@
-EL5_PKG=epel-release-5-4.noarch.rpm
-EL6_PKG=epel-release-6-7.noarch.rpm
-ELREPO6_PKG=elrepo-release-6-4.el6.elrepo.noarch.rpm
+EL5_PKG = epel-release-5-4.noarch.rpm
+EL6_PKG = epel-release-6-7.noarch.rpm
+ELREPO6_PKG = elrepo-release-6-4.el6.elrepo.noarch.rpm
+TEMPLATE_DIR = templates/
+TEMPLATE_FILES = $(wildcard templates/*.in)
 
+.PHONY: all
 all: build
 
-build: promote-nightly.sh promote-nightly.cron build-release.sh
+.PHONY: build
+build: templates
 	
-promote-nightly.sh: templates/promote-nightly.sh.in
-	@sed -e 's|@REMOTE_SERVER@|$(REMOTE_SERVER)|g' \
-	    -e 's|@PYTHON_VIRTENV@|$(PYTHON_VIRTENV)|g' \
+.PHONY: templates
+templates:
+	for t in $(TEMPLATE_FILES); do \
+	sed -e 's|@REMOTE_SERVER@|$(REMOTE_SERVER)|g' \
+		-e 's|@PYTHON_VIRTENV@|$(PYTHON_VIRTENV)|g' \
 		-e 's|@ARADO_HOME@|$(ARADO_HOME)|g' \
 		-e 's|@NIGHTLY_PATH@|$(NIGHTLY_PATH)|g' \
 		-e 's|@PRIVATE_KEY@|$(PRIVATE_KEY)|g' \
 		-e 's|@KEY_PATH@|$(KEY_PATH)|g' \
 		-e 's|@NOTIFY_ADDRESS@|$(NOTIFY_ADDRESS)|g' \
-		templates/promote-nightly.sh.in > promote-nightly.sh
-	@chmod 755 promote-nightly.sh
-
-promote-nightly.cron: templates/promote-nightly.cron.in
-	@sed -e 's|@NIGHTLY_PATH@|$(NIGHTLY_PATH)|g' \
-		templates/promote-nightly.cron.in > promote-nightly.cron
-
-build-release.sh: templates/build-release.sh.in
-	@sed -e 's|@KEY_PATH@|$(KEY_PATH)|g' \
-		templates/build-release.sh.in > build-release.sh
+		$$t > `basename $$t .in` ; done
 
 install: build
 	# Install scripts
 	mkdir -p $(DESTDIR)$(NIGHTLY_PATH)
-	install -pm 755 promote-nightly.sh $(DESTDIR)$(NIGHTLY_PATH)
-	install -pm 755 build-release.sh $(DESTDIR)$(NIGHTLY_PATH)
-	install -pm 755 checkbuild.py $(DESTDIR)$(NIGHTLY_PATH)
-	install -pm 755 promote-packages.py $(DESTDIR)$(NIGHTLY_PATH)
-	install -pm 755 create-reprepo-repo.sh $(DESTDIR)$(NIGHTLY_PATH)
+	install -pm 755 *.sh $(DESTDIR)$(NIGHTLY_PATH)
+	install -pm 755 *.py $(DESTDIR)$(NIGHTLY_PATH)
 	install -pm 644 release-package.spec $(DESTDIR)$(NIGHTLY_PATH)
 	# Install cronjob
 	mkdir -p $(DESTDIR)/etc/cron.d
@@ -55,10 +49,13 @@ install: build
 	ln -s $(EL6_PKG) $(DESTDIR)$(NIGHTLY_PATH)/packages/el6/epel-release-6.noarch.rpm
 	ln -s $(ELREPO6_PKG) $(DESTDIR)$(NIGHTLY_PATH)/packages/el6/elrepo-release-6.noarch.rpm
 
+.PHONY: clean
 clean:
 	rm -f promote-nightly.sh
+	rm -f promote-release.sh
 	rm -f promote-nightly.cron
 	rm -f build-release.sh
+	rm -f build-nightly-release.sh
 
 include config.mk
 

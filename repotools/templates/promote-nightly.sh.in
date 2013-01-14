@@ -1,17 +1,5 @@
 #!/bin/bash
 
-VERSION=3.2
-KEY=nightly
-TYPE=nightly
-RELEASE_PATH=/srv/software/releases/eucalyptus/nightly/$VERSION
-ENTERPRISE_RELEASE_PATH=/srv/software/releases/enterprise/nightly/$VERSION
-SEND_NOTIFICATION=yes
-DO_RSYNC=yes
-CHECK_QA=yes
-NOTIFY_ADDRESS=@NOTIFY_ADDRESS@
-
-export GNUPGHOME=@KEY_PATH@
-
 log() {
 	logger -t PROMOTE_NIGHTLY "$@"
 }
@@ -26,6 +14,7 @@ fail() {
 msg_body() {
 	echo "$@"
 	echo
+	echo "Git Branch: $REPO_BRANCH"
 	echo
 	echo -n "Enterprise Commit Hash: "
 	[ -n "$ENTERPRISE_COMMIT_HASH" ] && echo $ENTERPRISE_COMMIT_HASH \
@@ -43,12 +32,33 @@ notify_failure() {
 	msg_body "$@" | mail -s "Nightly Build Promotion Failure" $NOTIFY_ADDRESS
 }
 
+if [ $# -ne 2 ]; then
+	echo "Usage: $0 <branch> <version>"
+	exit 1
+fi
+
+REPO_BRANCH=$1
+VERSION=$2
+KEY=nightly
+TYPE=nightly
+RELEASE_PATH=/srv/software/releases/eucalyptus/nightly/$VERSION
+ENTERPRISE_RELEASE_PATH=/srv/software/releases/enterprise/nightly/$VERSION
+SEND_NOTIFICATION=yes
+DO_RSYNC=yes
+CHECK_QA=no
+NOTIFY_ADDRESS=@NOTIFY_ADDRESS@
+
+export GNUPGHOME=@KEY_PATH@
+
+
 ENTERPRISE_COMMIT_HASH=
 if [ "$CHECK_QA" = "yes" ]; then
-	ENTERPRISE_COMMIT_HASH=$(@PYTHON_VIRTENV@/bin/python @NIGHTLY_PATH@/checkbuild.py | sed 's/[\r\n]*$//')
+	ENTERPRISE_COMMIT_HASH=$(@PYTHON_VIRTENV@/bin/python \
+		@NIGHTLY_PATH@/checkbuild.py $REPO_BRANCH | sed 's/[\r\n]*$//')
 else
-	ENTERPRISE_COMMIT_HASH=$(@PYTHON_VIRTENV@/bin/python @ARADO_HOME@/arado-describe-commit \
-		-p enterprise -c maint/3.2/testing | sed 's/[\r\n]*$//')
+	ENTERPRISE_COMMIT_HASH=$(@PYTHON_VIRTENV@/bin/python \
+		@ARADO_HOME@/arado-describe-commit \
+		-p enterprise -c $REPO_BRANCH | sed 's/[\r\n]*$//')
 fi
 
 log "Promote Enterprise Build \`$ENTERPRISE_COMMIT_HASH'"
@@ -60,8 +70,7 @@ log "Promote Enterprise Build \`$ENTERPRISE_COMMIT_HASH'"
 
 log "Finished Enterprise Build Promotion"
 
-find /srv/software/releases/enterprise/nightly/$VERSION/ -name "vmware*.src.rpm" | xargs rm -f
-find /srv/software/releases/enterprise/nightly/$VERSION/ -name "eucalyptus*.src.rpm" | xargs rm -f
+rm -rf $ENTERPRISE_RELEASE_PATH/source
 
 # Decide which commit hash to promote for Eucalyptus based on what the enterprise
 # bits require.
@@ -88,7 +97,7 @@ log "Promote Eucalyptus Build \`$EUCA_COMMIT_HASH'"
 	|| fail "Promoting Eucalyptus Build"
 
 @PYTHON_VIRTENV@/bin/python @ARADO_HOME@/arado-promote-build \
-	-p eucadw -c master -r $VERSION -t $TYPE -k $KEY -m \
+	-p eucadw -c $REPO_BRANCH -r $VERSION -t $TYPE -k $KEY -m \
 	|| fail "Promoting EucaDW Build"
 
 log "Installing Eucalyptus Release Packages"
@@ -114,6 +123,10 @@ cp -a @NIGHTLY_PATH@/packages/el6/*.rpm $RELEASE_PATH/centos/6/x86_64/ \
 @PYTHON_VIRTENV@/bin/python @ARADO_HOME@/arado-rebuild-repo \
 	-p eucalyptus -c $EUCA_COMMIT_HASH -r $VERSION -t $TYPE -k $KEY \
 	|| fail "Rebuilding Eucalyptus Repository"
+
+# Clean up comps files
+find $RELEASE_PATH -maxdepth 4 -name "*.xml" | xargs rm -f
+find $ENTERPRISE_RELEASE_PATH -maxdepth 4 -name "*.xml" | xargs rm -f
 
 log "Finished Eucalyptus Build Promotion"
 

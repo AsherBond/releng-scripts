@@ -4,10 +4,19 @@ import sys
 import requests
 import json
 
-url = "http://jenkins.release.eucalyptus-systems.com:8080/view/QA/job/qa-enterprise-testing-centos-6-kvm-tgt/api/json?pretty=true"
+
+URL_TEMPL = "http://jenkins.release.eucalyptus-systems.com:8080/view/QA/job/qa-enterprise-%s-centos-6-kvm-tgt/api/json?pretty=true"
+JOB_VERSIONS = {
+	"maint/3.2/testing": "3.2-testing",
+	"testing": "testing",
+}
 
 if __name__ == "__main__":
     try:
+        if len(sys.argv) < 2:
+             print "Must provide branch name"
+             sys.exit(1)
+        url = URL_TEMPL % (JOB_VERSIONS[sys.argv[1]])
         data = requests.get(url).text
         build = json.loads(data)["lastSuccessfulBuild"]
         build_data = requests.get(build["url"] + "api/json?pretty=true").text

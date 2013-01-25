@@ -15,7 +15,7 @@ INTERNAL_URL="http://release-repo.eucalyptus-systems.com/releases/eucalyptus/$PA
 # Public Release Repository
 PUBLIC_NAME=eucalyptus-release
 PUBLIC_URL=http://downloads.eucalyptus.com/software/eucalyptus/$PACKAGE_VERSION/centos/\$releasever/\$basearch/
-PUBLIC_MIRROR_URL="http://mirrors.eucalyptus.com/mirrors?product=eucalyptus&releasever=\$releasever&basearch=\$basearch&version=$PACKAGE_VERSION"
+PUBLIC_MIRROR_URL="http://mirrors.eucalyptus.com/mirrors?product=eucalyptus&distro=centos&releasever=\$releasever&basearch=\$basearch&version=$PACKAGE_VERSION"
 
 # Release Key
 KEY=C1240596

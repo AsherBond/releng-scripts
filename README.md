@@ -7,3 +7,5 @@ Eucalyptus Release Engineering Scripts
 
 * **nagios** - Nagios scripts used by Release Engineering
 
+* **jenkins** - Scripts and things for the Jenkins CI build system
+

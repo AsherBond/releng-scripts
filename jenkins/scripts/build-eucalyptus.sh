@@ -1,13 +1,14 @@
 #!/bin/bash
 
-# Variables defined by Jenkins
-${platform:=centos-6-x86_64}
-${MODE:=prerelease}
-${GIT_BRANCH:=testing}
-${BUILD_TAG:=0}
-${BUILD_NUMBER:=0}
+# Variables defined by Jenkins with defaults
+platform=${platform:-centos-6-x86_64}
+MODE=${MODE:-prerelease}
+GIT_BRANCH=${GIT_BRANCH:-testing}
+BUILD_TAG=${BUILD_TAG:-0}
+BUILD_NUMBER=${BUILD_NUMBER:-0}
+JENKINS_URL=${JENKINS_URL:-http://jenkins.release.eucalyptus-systems.com}
 
-git clone git://github.com/eucalyptus/eucalyptus.git
+git clone -b $GIT_BRANCH git://github.com/eucalyptus/eucalyptus.git
 
 # Git Repositories
 RPMFAB_REPO=git://github.com/gholms/rpmfab.git
@@ -19,7 +20,7 @@ if [ ! -d eucalyptus-cloud-libs ]; then
 fi
 
 git --git-dir=eucalyptus-cloud-libs/.git archive \
-    --format=tar.gz HEAD > cloud-lib.tar.gz
+    --format=tar HEAD | gzip > cloud-lib.tar.gz
 
 # Tarball
 rm -f git-info.properties
@@ -43,9 +44,9 @@ EOF
 
 eval `cat git-info.properties`
 
-$EUCAGIT archive --format=tar.gz \
+$EUCAGIT archive --format=tar \
     --prefix=eucalyptus-${TARBALL_VERSION}${TARBALL_SUFFIX}/ \
-    HEAD > eucalyptus-${TARBALL_VERSION}${TARBALL_SUFFIX}.tar.gz
+    HEAD | gzip > eucalyptus-${TARBALL_VERSION}${TARBALL_SUFFIX}.tar.gz
 
 # Eucalyptus SRPM
 git clone $RPMFAB_REPO rpmfab
@@ -69,7 +70,7 @@ elif [ "$MODE" = "release" ]; then
     fi
 fi
 
-platform_url=http://jenkins.release.eucalyptus-systems.com/userContent/mock/$platform.cfg
+platform_url=$JENKINS_URL/userContent/mock/$platform.cfg
 
 rpmfab/build-srpm-from-scm.py -c "$platform_url" -w . -o results \
     --mock-options "--uniqueext $BUILD_TAG" -m "build_id=$BUILD_ID" \

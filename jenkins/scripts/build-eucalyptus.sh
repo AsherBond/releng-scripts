@@ -8,29 +8,33 @@ BUILD_TAG=${BUILD_TAG:-0}
 BUILD_NUMBER=${BUILD_NUMBER:-0}
 JENKINS_URL=${JENKINS_URL:-http://jenkins.release.eucalyptus-systems.com}
 
-git clone -b $GIT_BRANCH git://github.com/eucalyptus/eucalyptus.git
-
 # Git Repositories
+EUCA_REPO=git://github.com/eucalyptus/eucalyptus.git
+CLOUDLIB_REPO=git://github.com/eucalyptus/eucalyptus-cloud-libs.git
 RPMFAB_REPO=git://github.com/gholms/rpmfab.git
 SPEC_REPO=git://github.com/eucalyptus/eucalyptus-rpmspec.git
 EUCAGIT="git --git-dir=eucalyptus/.git"
 
+if [ ! -d eucalyptus ]; then
+    git clone $EUCA_REPO
+fi
+
+if [ -n "$commit_override" ]; then
+    $EUCAGIT clean -f
+    $EUCAGIT checkout -f $commit_override
+else
+    $EUCAGIT checkout $GIT_BRANCH
+    $EUCAGIT pull origin $GIT_BRANCH
+fi
+
 if [ ! -d eucalyptus-cloud-libs ]; then
-    git clone git://github.com/eucalyptus/eucalyptus-cloud-libs.git
+    git clone $CLOUDLIB_REPO
 fi
 
 git --git-dir=eucalyptus-cloud-libs/.git archive \
     --format=tar HEAD | gzip > cloud-lib.tar.gz
 
 # Tarball
-rm -f git-info.properties
-rm -rf rpmfab
-
-if [ -n "$commit_override" ]; then
-    $EUCAGIT clean -f
-    $EUCAGIT checkout -f $commit_override
-fi
-
 cat > git-info.properties << EOF
 MODE=$MODE
 GIT_URL=$($EUCAGIT remote show -n origin | sed -n '/Fetch URL:/s/^[^:]*: //p')
@@ -49,7 +53,11 @@ $EUCAGIT archive --format=tar \
     HEAD | gzip > eucalyptus-${TARBALL_VERSION}${TARBALL_SUFFIX}.tar.gz
 
 # Eucalyptus SRPM
-git clone $RPMFAB_REPO rpmfab
+if [ ! -d rpmfab ]; then
+    git clone -b master $RPMFAB_REPO rpmfab
+fi
+
+git --git-dir=rpmfab/.git pull origin master
 
 BUILD_ID=
 TARBALL_OPT=

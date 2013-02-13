@@ -11,7 +11,7 @@ JENKINS_URL=${JENKINS_URL:-http://jenkins.release.eucalyptus-systems.com}
 # Git Repositories
 EUCA_REPO=git://github.com/eucalyptus/eucalyptus.git
 CLOUDLIB_REPO=git://github.com/eucalyptus/eucalyptus-cloud-libs.git
-RPMFAB_REPO=git://github.com/gholms/rpmfab.git
+RPMFAB_REPO=git://github.com/mspaulding06/rpmfab.git
 SPEC_REPO=git://github.com/eucalyptus/eucalyptus-rpmspec.git
 EUCAGIT="git --git-dir=eucalyptus/.git"
 
